@@ -45,21 +45,43 @@ async def main():
     log_header("DOCUMENTATION INGESTION PIPELINE")
 
     log_info(
-        "TavilyCrawl: Starting to crawl documentation from https://python.langchain.com/",
+        "TavilyCrawl: Starting to crawl documentation from https://python.langchain.com",
         Colors.PURPLE,
         )
     
     # Crawl the documentation site
     res = tavily_crawl.invoke({
-        "url": "https://python.langchain.com/",
-        "max_depth": 1,
+        "url": "https://python.langchain.com",
+        "max_depth": 5,
+        "max_breadth": 100,
+        "limit": 500,
         "extract_depth": "advanced",
-        #"instructions": "content on AI agents"
+        #"instructions": "Find all documentation pages about Agents"
     })
 
-    all_docs = [Document(page_content=result["raw_content"], metadata={"source": result["url"]}) 
-                for result in res["results"]]
+    #all_docs = [Document(page_content=result["raw_content"], metadata={"source": result["url"]}) 
+    #            for result in res["results"]]
+    
+    results = res.get("results", [])
+    all_docs = []
+
+    for result in results:
+        content = result.get("raw_content")
+        if not content:
+            log_warning(f"Skipping empty content for {result.get('url')}")
+            continue
+        all_docs.append(Document(page_content=content, metadata={"source": result.get("url")}))
+
     log_success(f"TavilyCrawl: Successfully crawled {len(all_docs)} documents from the site.")
+
+    log_header("DOCUMENT CHUNKING PHASE")
+    log_info(
+        f"Text Splitter: Processing {len(all_docs)} documents with 4000 chunk size and 200 chunk overlap.",
+        Colors.YELLOW,
+    )
+    text_splitter = RecursiveCharacterTextSplitter(chunk_size=4000, chunk_overlap=200)
+    splitted_docs = text_splitter.split_documents(all_docs)
+    log_success(f"Text Splitter: Successfully split {len(all_docs)} documents into {len(splitted_docs)} chunks.")
 
 if __name__ == "__main__":
     asyncio.run(main()) 
