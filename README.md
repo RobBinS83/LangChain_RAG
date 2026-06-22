@@ -30,13 +30,7 @@ This project crawls documentation from `https://python.langchain.com`, splits th
 ## Installation
 
 ```bash
-python -m pip install -e .
-```
-
-Or:
-
-```bash
-python -m pip install .
+uv sync
 ```
 
 ---
